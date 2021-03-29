@@ -127,3 +127,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+models/brokenconv.py
+models/ShuffleUNet/__init__.py
+models/ShuffleUNet/icnr.py
+models/ShuffleUNet/net2d.py
+models/ShuffleUNet/net3d.py
+models/ShuffleUNet/pixel_shuffle.py
+models/ShuffleUNet/pixel_unshuffle.py
+rough.py
+utils/pLoss/VesselSeg_UNet3d_DeepSup.pth
