@@ -79,7 +79,7 @@ class _concat(nn.Module):
 
 class ShuffleUNet(nn.Module):
 
-    def __init__(self, d=3, in_ch=1, num_features=64, n_levels=4, out_ch=1, kernel_size=3, stride=1):
+    def __init__(self, d=3, in_ch=1, num_features=64, n_levels=3, out_ch=1, kernel_size=3, stride=1):
         super(ShuffleUNet, self).__init__()
 
         self.n_levels = n_levels

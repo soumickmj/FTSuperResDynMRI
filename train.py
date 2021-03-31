@@ -21,7 +21,7 @@ from tqdm import tqdm
 import wandb
 from models import *
 from models.ReconResNet import ResNet
-from models.ShuffleUNet.net3d import ShuffleUNet
+from models.ShuffleUNet.net import ShuffleUNet
 from models.ThisNewNet import ThisNewNet
 from utils.data import *
 from utils.datasets import SRDataset
