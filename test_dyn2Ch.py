@@ -120,8 +120,8 @@ def parseARGS():
     return ap.parse_args()
 
 args = parseARGS()
-os.environ["TMPDIR"] = "/scratch/schatter/tmp"
-os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+# os.environ["TMPDIR"] = "/scratch/schatter/tmp"
+# os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 random.seed(args.seed)
 os.environ['PYTHONHASHSEED'] = str(args.seed)
 np.random.seed(args.seed)

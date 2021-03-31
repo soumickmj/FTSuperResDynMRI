@@ -60,16 +60,15 @@ lossIDs = {
 
 def parseARGS():
     ap = argparse.ArgumentParser()
-    ap.add_argument("-g", "--gpu", default="1", help="GPU ID(s).") 
+    ap.add_argument("-g", "--gpu", default="0", help="GPU ID(s).") 
     ap.add_argument("--seed", default=2020, type=int, help="Seed") 
-    ap.add_argument("-ds", "--dataset", default=r'/project/schatter/Chimp/Data/', help="Path to Dataset Folder.")
-    # ap.add_argument("-ds", "--dataset", default=r'/project/schatter/Chimp/Data/StaticFT/ChimpAbdomen/Protocol0/', help="Path to Dataset Folder.")
+    ap.add_argument("-ds", "--dataset", default=r'/mnt/public/sarasaen/Data/', help="Path to Dataset Folder.")
     ap.add_argument("-us", "--us", default='Center6p25MaskWoPad', help="Undersample.")
     ap.add_argument("-s", "--scalefact", default='(1,1,1)', help="Scaling Factor. For Zero padded data, set the dim to 1. [As a 3 valued tuple, factor for each dim. Supply seperated by coma or as a tuple, no spaces in between.].")
     ap.add_argument("-uf", "--usfolder", default='usCHAOSWoT2', help="Undersampled Folder.")
     ap.add_argument("-hf", "--hrfolder", default='hrCHAOS', help="HighRes (Fully-sampled) Folder.")
-    ap.add_argument("-o", "--outfolder", default='paperReproduce', help="Output Folder.")
-    ap.add_argument("-ms", "--modelsuffix", default='oldDS', help="Any Suffix To Add with the Model Name.")
+    ap.add_argument("-o", "--outfolder", default='staticTPSR', help="Output Folder.")
+    ap.add_argument("-ms", "--modelsuffix", default='', help="Any Suffix To Add with the Model Name.")
     ap.add_argument("-bs", "--batchsize", type=int, default=96, help="Batch Size.")
     ap.add_argument("-nw", "--nworkers", type=int, default=8, help="Number of Workers.")
 
@@ -77,12 +76,12 @@ def parseARGS():
     ap.add_argument("-cpft", "--chkpointft", default=None, help="(To be used for Fine-Tuning) Checkpoint to Load for Fine-Tuning.")
     ap.add_argument("-c", "--cuda", type=bool, default=True, help="Use CUDA.")
     ap.add_argument("-mg", "--mulgpu", type=bool, default=False, help="Use Multiple GPU.")
-    ap.add_argument("-amp", "--amp", type=bool, default=False, help="Use AMP.")
+    ap.add_argument("-amp", "--amp", type=bool, default=True, help="Use AMP.")
     ap.add_argument("-v", "--val", type=bool, default=False, help="Do Validation.")
     ap.add_argument("-vp", "--valdsper", type=float, default=0.3, help="Percentage of the DS to be used for Validation.")
     ap.add_argument("-p", "--profile", type=bool, default=False, help="Do Model Profiling.")
 
-    ap.add_argument("-ep", "--epochs", type=int, default=157, help="Total Number of Epochs. To use Number of Iterations, set it to None")
+    ap.add_argument("-ep", "--epochs", type=int, default=150, help="Total Number of Epochs. To use Number of Iterations, set it to None")
     ap.add_argument("-it", "--iterations", type=int, default=1e6, help="Total Number of Iterations. To be used if number of Epochs is None")
     ap.add_argument("-lr", "--lr", type=float, default=1e-4, help="Total Number of Epochs.")
     ap.add_argument("-ps", "--patchsize", default='(24,24,24)', help="Patch Size. Supply seperated by coma or as a tuple, no spaces in between. Set it to None if not desired.")
@@ -93,7 +92,7 @@ def parseARGS():
 
     ap.add_argument("-mid", "--modelid", type=int, default=0, help="Model ID."+str(modelIDs))
     ap.add_argument("-mbn", "--batchnorm", type=bool, default=False, help="(Only for Model ID 0) Do BatchNorm.")
-    ap.add_argument("-mum", "--upmode", default='upconv', help="(Only for Model ID 0) UpMode [upconv, upsample].")
+    ap.add_argument("-mum", "--upmode", default='upsample', help="(Only for Model ID 0) UpMode [upconv, upsample].")
     ap.add_argument("-mdp", "--mdepth", type=int, default=3, help="(Only for Model ID 0 and 6) Depth of the Model.")
     ap.add_argument("-d", "--dropprob", type=float, default=0.0, help="(Only for Model ID 0 and 6) Dropout Probability.")
     ap.add_argument("-nc", "--nchannel", type=int, default=1, help="Number of Channels in the Data.")
@@ -115,7 +114,7 @@ def parseARGS():
     #WnB related params
     ap.add_argument("-wnbp", "--wnbproject", default='SuperResMRI', help="WandB: Name of the project")
     ap.add_argument("-wnbe", "--wnbentity", default='mickchimp', help="WandB: Name of the entity")
-    ap.add_argument("-wnbg", "--wnbgroup", default='paperReproduce', help="WandB: Name of the group")
+    ap.add_argument("-wnbg", "--wnbgroup", default='staticTPSR', help="WandB: Name of the group")
     ap.add_argument("-wnbpf", "--wnbprefix", default='', help="WandB: Prefix for TrainID")
     ap.add_argument("-wnbml", "--wnbmodellog", default='all', help="WandB: While watching the model, what to save: gradients, parameters, all, None")
     ap.add_argument("-wnbmf", "--wnbmodelfreq", type=int, default=100, help="WandB: The number of steps between logging gradients")
@@ -123,8 +122,8 @@ def parseARGS():
     return ap.parse_args()
 
 args = parseARGS()
-os.environ["TMPDIR"] = "/scratch/schatter/tmp"
-os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+# os.environ["TMPDIR"] = "/scratch/schatter/tmp"
+# os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 random.seed(args.seed)
 os.environ['PYTHONHASHSEED'] = str(args.seed)
 np.random.seed(args.seed)
@@ -223,10 +222,10 @@ if __name__ == "__main__" :
         model = ThisNewNet(in_channels=args.nchannel, n_classes=args.nchannel, depth=args.mdepth, batch_norm=args.batchnorm, up_mode=args.upmode, dropout=bool(args.dropprob), 
                             scale_factor=model_scale_factor, num_features=args.nfeatures, sliceup_first=True if args.modelid==8 else False, 
                             loss_slice_count=args.tnnlslc, loss_inplane=args.tnnlinp)
-    elif args.modelID == 9:
+    elif args.modelid == 9:
         model=ResNet(n_channels=args.nchannel,is3D=True,res_blocks=14,starting_nfeatures=args.nfeatures,updown_blocks=2,is_relu_leaky=True, #TODO: put all params as args
                     do_batchnorm=args.batchnorm, res_drop_prob=0.2,out_act="sigmoid",forwardV=0, upinterp_algo='convtrans', post_interp_convtrans=False)
-    elif args.modelID == 10:
+    elif args.modelid == 10:
         model=ShuffleUNet(in_ch=args.nchannel, num_features=args.nfeatures, out_ch=args.nchannel)
     else:
         sys.exit("Invalid Model ID")
