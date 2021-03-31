@@ -6,4 +6,4 @@ from models.unet3D_DeepSup import U_Net_DeepSup as UNetVSeg
 from models.densenet import generate_model as DenseNet
 from models.ThisNewNet import ThisNewNet
 from models.ReconResNet import ResNet
-from models.ShuffleUNet.net3d import ShuffleUNet
+from models.ShuffleUNet.net import ShuffleUNet
