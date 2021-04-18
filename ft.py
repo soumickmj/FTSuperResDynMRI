@@ -29,7 +29,7 @@ from utils.pLoss.perceptual_loss import PerceptualLoss
 from utils.utilities import getSSIM, tensorboard_images
 
 __author__ = "Soumick Chatterjee, Chompunuch Sarasaen"
-__copyright__ = "Copyright 2021, Faculty of Computer Science, Otto von Guericke University Magdeburg, Germany"
+__copyright__ = "Copyright 2020, Faculty of Computer Science, Otto von Guericke University Magdeburg, Germany"
 __credits__ = ["Soumick Chatterjee", "Chompunuch Sarasaen"]
 __license__ = "GPL"
 __version__ = "1.0.0"
@@ -63,22 +63,22 @@ def parseARGS():
     ap = argparse.ArgumentParser()
     ap.add_argument("-g", "--gpu", default="0", help="GPU ID(s).") 
     ap.add_argument("--seed", default=2020, type=int, help="Seed") 
-    ap.add_argument("-ds", "--dataset", default=r'/mnt/public/sarasaen/Data/', help="Path to Dataset Folder.")
+    ap.add_argument("-ds", "--dataset", default=r'/mnt/public/sarasaen/Data/StaticFT/ChimpAbdomen/Protocol2/', help="Path to Dataset Folder.")
     ap.add_argument("-us", "--us", default='Center6p25MaskWoPad', help="Undersample.")
     ap.add_argument("-s", "--scalefact", default='(1,1,1)', help="Scaling Factor. For Zero padded data, set the dim to 1. [As a 3 valued tuple, factor for each dim. Supply seperated by coma or as a tuple, no spaces in between.].")
-    ap.add_argument("-uf", "--usfolder", default='usCHAOSWoT2', help="Undersampled Folder.")
-    ap.add_argument("-hf", "--hrfolder", default='hrCHAOS', help="HighRes (Fully-sampled) Folder.")
+    ap.add_argument("-uf", "--usfolder", default='usTest', help="Undersampled Folder.")
+    ap.add_argument("-hf", "--hrfolder", default='hrTest', help="HighRes (Fully-sampled) Folder.")
     ap.add_argument("-o", "--outfolder", default='staticTPSR', help="Output Folder.")
     ap.add_argument("-ms", "--modelsuffix", default='', help="Any Suffix To Add with the Model Name.")
     ap.add_argument("-bs", "--batchsize", type=int, default=96, help="Batch Size.")
     ap.add_argument("-nw", "--nworkers", type=int, default=8, help="Number of Workers.")
 
     ap.add_argument("-cp", "--chkpoint", default=None, help="Checkpoint (of the current training) to Load.")
-    ap.add_argument("-cpft", "--chkpointft", default=None, help="(To be used for Fine-Tuning) Checkpoint to Load for Fine-Tuning.")
+    ap.add_argument("-cpft", "--chkpointft", default="/mnt/public/sarasaen/Data/staticTPSR/usCHAOSWoT2_ReconResNetFresh2_Center6p25MaskWoPad_pLossL1lvl3/usCHAOSWoT2_ReconResNetFresh2_Center6p25MaskWoPad_pLossL1lvl3.pth.tar", help="(To be used for Fine-Tuning) Checkpoint to Load for Fine-Tuning.")
     ap.add_argument("-c", "--cuda", type=bool, default=True, help="Use CUDA.")
     ap.add_argument("-mg", "--mulgpu", type=bool, default=False, help="Use Multiple GPU.")
     ap.add_argument("-amp", "--amp", type=bool, default=True, help="Use AMP.")
-    ap.add_argument("-v", "--val", type=bool, default=True, help="Do Validation.")
+    ap.add_argument("-v", "--val", type=bool, default=False, help="Do Validation.")
     ap.add_argument("-vp", "--valdsper", type=float, default=0.3, help="Percentage of the DS to be used for Validation.")
     ap.add_argument("-p", "--profile", type=bool, default=False, help="Do Model Profiling.")
 
@@ -86,29 +86,29 @@ def parseARGS():
     ap.add_argument("-it", "--iterations", type=int, default=1e6, help="Total Number of Iterations. To be used if number of Epochs is None")
     ap.add_argument("-lr", "--lr", type=float, default=1e-4, help="Total Number of Epochs.")
     ap.add_argument("-ps", "--patchsize", default='(24,24,24)', help="Patch Size. Supply seperated by coma or as a tuple, no spaces in between. Set it to None if not desired.")
-    ap.add_argument("-pst", "--patchstride", default='(12,12,6)', help="Stride of patches, to be used during validation")
+    ap.add_argument("-pst", "--patchstride", default='(1,1,1)', help="Stride of patches, to be used during validation")
     ap.add_argument("-l", "--logfreq", type=int, default=10, help="log Frequency.")
-    ap.add_argument("-sf", "--savefreq", type=int, default=10, help="saving Frequency.")
+    ap.add_argument("-sf", "--savefreq", type=int, default=1, help="saving Frequency.")
     ap.add_argument("-ml", "--medianloss", type=int, default=True, help="Use Median to get loss value (Final Reduction).")
 
-    ap.add_argument("-mid", "--modelid", type=int, default=0, help="Model ID."+str(modelIDs))
+    ap.add_argument("-mid", "--modelid", type=int, default=9, help="Model ID."+str(modelIDs))
     ap.add_argument("-mbn", "--batchnorm", type=bool, default=False, help="(Only for Model ID 0, 11) Do BatchNorm.")
     ap.add_argument("-mum", "--upmode", default='upconv', help="(Only for Model ID 0, 11) UpMode for model ID 0 and 11: [upconv, upsample], for model ID 9: [convtrans, <interp algo>]")
     ap.add_argument("-mdp", "--mdepth", type=int, default=3, help="(Only for Model ID 0, 6, 11) Depth of the Model.")
     ap.add_argument("-d", "--dropprob", type=float, default=0.0, help="(Only for Model ID 0, 6, 11) Dropout Probability.")
     ap.add_argument("-mslvl", "--msslevel", type=int, default=2, help="(Only for Model ID 11) Depth of the Model.")
-    ap.add_argument("-msltn", "--msslatent", type=int, default=1, help="(Only for Model ID 11) Use the latent as one of the MSS level.")
+    ap.add_argument("-msltn", "--msslatent", type=bool, default=True, help="(Only for Model ID 11) Use the latent as one of the MSS level.")
     ap.add_argument("-msup", "--mssup", default="trilinear", help="(Only for Model ID 11) Interpolation to use on the MSS levels.")
-    ap.add_argument("-msinb4", "--mssinterpb4", type=int, default=0, help="(Only for Model ID 11) Apply Interpolation before applying conv for the MSS levels. If False, interp will be applied after conv.")
+    ap.add_argument("-msinb4", "--mssinterpb4", type=bool, default=False, help="(Only for Model ID 11) Apply Interpolation before applying conv for the MSS levels. If False, interp will be applied after conv.")
     ap.add_argument("-nc", "--nchannel", type=int, default=1, help="Number of Channels in the Data.")
     ap.add_argument("-is", "--inshape", default='(256,256,30)', help="Input Shape. Supply seperated by coma or as a tuple, no spaces in between. Will only be used if Patch Size is None.")
     ap.add_argument("-f", "--nfeatures", type=int, default=64, help="(Not for DenseNet) N Starting Features of the Network.")
     ap.add_argument("-lid", "--lossid", type=int, default=0, help="Loss ID."+str(lossIDs))
     ap.add_argument("-plt", "--plosstyp", default="L1", help="(Only for Loss ID 0) Perceptual Loss Type.")
     ap.add_argument("-pll", "--plosslvl", type=int, default=3, help="(Only for Loss ID 0) Perceptual Loss Level.")
-    ap.add_argument("-lrd", "--lrdecrate", type=int, default=1, help="(To be used for Fine-Tuning) Factor by which lr will be divided to find the actual lr. Set it to 1 if not desired")
-    ap.add_argument("-ft", "--finetune", type=int, default=0, help="Is it a Fine-tuning traing or not (main-train).")
-    ap.add_argument("-ftep", "--fteprt", type=float, default=0.00, help="(To be used for Fine-Tuning) Fine-Tune Epoch Rate.")
+    ap.add_argument("-lrd", "--lrdecrate", type=int, default=100, help="(To be used for Fine-Tuning) Factor by which lr will be divided to find the actual lr. Set it to 1 if not desired")
+    ap.add_argument("-ft", "--finetune", type=int, default=1, help="Is it a Fine-tuning traing or not (main-train).")
+    ap.add_argument("-ftep", "--fteprt", type=float, default=0.001, help="(To be used for Fine-Tuning) Fine-Tune Epoch Rate.")
     ap.add_argument("-ftit", "--ftitrt", type=float, default=0.10, help="(To be used for Fine-Tuning, if fteprt is None) Fine-Tune Iteration Rate.")
     ap.add_argument("-int", "--preint", default="trilinear", help="Pre-interpolate before sending it to the Network. Set it to None if not needed.")    
     ap.add_argument("-nrm", "--prenorm", default=True, type=bool, help="Rescale intensities beteen 0 and 1")    
@@ -117,7 +117,6 @@ def parseARGS():
     ap.add_argument("-tli", "--tnnlinp", type=int, default=1, help="Solo per ThisNewNet. loss_inplane. Default 1")
 
     #WnB related params
-    ap.add_argument("-wnb", "--wnbactive", type=bool, default=True, help="WandB: Whether to use or not")
     ap.add_argument("-wnbp", "--wnbproject", default='SuperResMRI', help="WandB: Name of the project")
     ap.add_argument("-wnbe", "--wnbentity", default='mickchimp', help="WandB: Name of the entity")
     ap.add_argument("-wnbg", "--wnbgroup", default='staticTPSR', help="WandB: Name of the group")
@@ -130,7 +129,7 @@ def parseARGS():
 args = parseARGS()
 # os.environ["TMPDIR"] = "/scratch/schatter/tmp"
 # os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
-torch.set_num_threads(1)
+#torch.set_num_threads(1)
 random.seed(args.seed)
 os.environ['PYTHONHASHSEED'] = str(args.seed)
 np.random.seed(args.seed)
@@ -138,6 +137,7 @@ torch.manual_seed(args.seed)
 torch.cuda.manual_seed(args.seed)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
+
 
 if __name__ == "__main__" :
     args.scalefact = tuple(map(int, args.scalefact.replace('(','').replace(')','').split(',')))  
@@ -260,7 +260,7 @@ if __name__ == "__main__" :
 
     args.lr = args.lr/args.lrdecrate
     optimizer = optim.Adam(params=filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr)
-    
+
     model.to(device)
 
     if args.lossid == 0:
@@ -321,9 +321,6 @@ if __name__ == "__main__" :
         logging.error('Training should atleast be for one epoch. Adjusting to perform 1 epoch training')
         args.epochs = start_epoch+1
 
-    if not args.wnbactive:
-        os.environ["WANDB_MODE"] = "dryrun"
-
     with wandb.init(project=args.wnbproject, entity=args.wnbentity, group=args.wnbgroup, config=args, name=args.wnbprefix+trainID, id=args.wnbprefix+trainID, resume=True) as WnBRun:
         wandb.watch(model, log=args.wnbmodellog, log_freq=args.wnbmodelfreq)
 
@@ -381,7 +378,7 @@ if __name__ == "__main__" :
                     # tensorboard_images(tb_writer, inp, out.detach(), gt, epoch, 'train')
                     runningLoss = []
             
-            if args.finetune or (epoch % args.savefreq == 0):            
+            if args.finetune or (epoch % args.savefreq == 0):              
                 checkpoint = {
                     'epoch': epoch,
                     'iterations': (epoch+1)*len(train_loader),
@@ -391,7 +388,7 @@ if __name__ == "__main__" :
                     'AMPScaler': scaler.state_dict()         
                 }
                 torch.save(checkpoint, os.path.join(save_path, trainID+".pth.tar"))
-                if args.modelid != 9 and args.modelid != 6:
+                if args.modelid != 9:
                     torch.onnx.export(model, images, trainID+".onnx", input_names=["LRCurrTP"], output_names=["SuperResolvedCurrTP"])
                     wandb.save(trainID+".onnx")
 
@@ -459,7 +456,7 @@ if __name__ == "__main__" :
                             'AMPScaler': scaler.state_dict()         
                         }
                         torch.save(checkpoint, os.path.join(save_path, trainID+"_best.pth.tar"))
-                        if args.modelid != 9 and args.modelid != 6:
+                        if args.modelid != 9:
                             torch.onnx.export(model, images, trainID+"_best.onnx", input_names=["LRCurrTP"], output_names=["SuperResolvedCurrTP"])
                             wandb.save(trainID+"_best.onnx")
                 tb_writer.add_scalar('Val/EpochLoss', loss_reducer(val_loss), epoch)

@@ -44,7 +44,8 @@ modelIDs = {
     7: "UNETSRCNN",
     8: "SRCNNUNET",
     9: "ReconResNet",
-    10: "ShuffleUNet"
+    10: "ShuffleUNet",
+    11: "UNETMSS",
 }
 
 lossIDs = {
@@ -58,15 +59,15 @@ def parseARGS():
     ap = argparse.ArgumentParser()
     ap.add_argument("-g", "--gpu", default="1", help="GPU ID(s).") 
     ap.add_argument("--seed", default=2020, type=int, help="Seed") 
-    ap.add_argument("-ds", "--dataset", default=r'/project/schatter/Chimp/Data/3DDynTest/ChimpAbdomen/DynProtocol0/', help="Path to Dataset Folder.")
-    ap.add_argument("-op", "--outpath", default=r'/project/schatter/Chimp/Data/', help="Path for Output.")
-    ap.add_argument("-ot", "--outtype", default=r'Chimp3DDyn0_woZpad_New', help="Type of Recon currently being performed.")
+    ap.add_argument("-ds", "--dataset", default=r'/mnt/public/sarasaen/Data/3DDynTest/ChimpAbdomen/DynProtocol0/', help="Path to Dataset Folder.")
+    ap.add_argument("-op", "--outpath", default=r'/mnt/public/sarasaen/Data/CHAOSDynWoT2/', help="Path for Output.")
+    ap.add_argument("-ot", "--outtype", default=r'Chimp3DDyn0_woZpad', help="Type of Recon currently being performed.")
 
-    ap.add_argument("-us", "--us", default='Center6p25MaskWoPad145', help="Undersample.")
+    ap.add_argument("-us", "--us", default='Center6p25MaskWoPadTP10', help="Undersample.")
     ap.add_argument("-s", "--scalefact", default='(1,1,1)', help="Scaling Factor. For Zero padded data, set the dim to 1. [As a 3 valued tuple, factor for each dim. Supply seperated by coma or as a tuple, no spaces in between.].")
-    ap.add_argument("-uf", "--usfolder", default='usTest', help="Undersampled Folder.")
-    ap.add_argument("-hf", "--hrfolder", default='hrTest', help="HighRes (Fully-sampled) Folder.")
-    ap.add_argument("-o", "--outfolder", default='paperReproduce', help="Output Folder.")
+    ap.add_argument("-uf", "--usfolder", default='usTestDyn', help="Undersampled Folder.")
+    ap.add_argument("-hf", "--hrfolder", default='hrTestDyn', help="HighRes (Fully-sampled) Folder.")
+    ap.add_argument("-o", "--outfolder", default='dynDualChn', help="Output Folder.")
 
     ap.add_argument("-bs", "--batchsize", type=int, default=96, help="Batch Size.")
     ap.add_argument("-nw", "--nworkers", type=int, default=8, help="Number of Workers.")
@@ -93,10 +94,14 @@ def parseARGS():
 
     #param to reproduce model
     ap.add_argument("-mid", "--modelid", type=int, default=0, help="Model ID."+str(modelIDs))
-    ap.add_argument("-mbn", "--batchnorm", type=bool, default=False, help="(Only for Model ID 0) Do BatchNorm.")
-    ap.add_argument("-mum", "--upmode", default='upconv', help="(Only for Model ID 0) UpMode [upconv, upsample].")
-    ap.add_argument("-mdp", "--mdepth", type=int, default=3, help="(Only for Model ID 0 and 6) Depth of the Model.")
-    ap.add_argument("-d", "--dropprob", type=float, default=0.0, help="(Only for Model ID 0 and 6) Dropout Probability.")
+    ap.add_argument("-mbn", "--batchnorm", type=bool, default=False, help="(Only for Model ID 0, 11) Do BatchNorm.")
+    ap.add_argument("-mum", "--upmode", default='upconv', help="(Only for Model ID 0, 11) UpMode for model ID 0 and 11: [upconv, upsample], for model ID 9: [convtrans, <interp algo>]")
+    ap.add_argument("-mdp", "--mdepth", type=int, default=3, help="(Only for Model ID 0, 6, 11) Depth of the Model.")
+    ap.add_argument("-d", "--dropprob", type=float, default=0.0, help="(Only for Model ID 0, 6, 11) Dropout Probability.")
+    ap.add_argument("-mslvl", "--msslevel", type=int, default=2, help="(Only for Model ID 11) Depth of the Model.")
+    ap.add_argument("-msltn", "--msslatent", type=int, default=1, help="(Only for Model ID 11) Use the latent as one of the MSS level.")
+    ap.add_argument("-msup", "--mssup", default="trilinear", help="(Only for Model ID 11) Interpolation to use on the MSS levels.")
+    ap.add_argument("-msinb4", "--mssinterpb4", type=int, default=0, help="(Only for Model ID 11) Apply Interpolation before applying conv for the MSS levels. If False, interp will be applied after conv.")
     ap.add_argument("-f", "--nfeatures", type=int, default=64, help="(Not for DenseNet) N Starting Features of the Network.")
     ap.add_argument("-lid", "--lossid", type=int, default=0, help="Loss ID."+str(lossIDs))
     ap.add_argument("-plt", "--plosstyp", default="L1", help="(Only for Loss ID 0) Perceptual Loss Type.")
@@ -110,10 +115,11 @@ def parseARGS():
     ap.add_argument("-tli", "--tnnlinp", type=int, default=1, help="Solo per ThisNewNet. loss_inplane. Default 1")
 
     #WnB related params
+    ap.add_argument("-wnb", "--wnbactive", type=bool, default=True, help="WandB: Whether to use or not")
     ap.add_argument("-wnbp", "--wnbproject", default='SuperResMRI', help="WandB: Name of the project")
     ap.add_argument("-wnbe", "--wnbentity", default='mickchimp', help="WandB: Name of the entity")
     ap.add_argument("-wnbg", "--wnbgroup", default='dynDualChn', help="WandB: Name of the group")
-    ap.add_argument("-wnbpf", "--wnbprefix", default='1stRun_', help="WandB: Prefix for TrainID")
+    ap.add_argument("-wnbpf", "--wnbprefix", default='', help="WandB: Prefix for TrainID")
     ap.add_argument("-wnbml", "--wnbmodellog", default='all', help="WandB: While watching the model, what to save: gradients, parameters, all, None")
     ap.add_argument("-wnbmf", "--wnbmodelfreq", type=int, default=100, help="WandB: The number of steps between logging gradients")
 
@@ -122,6 +128,7 @@ def parseARGS():
 args = parseARGS()
 # os.environ["TMPDIR"] = "/scratch/schatter/tmp"
 # os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+torch.set_num_threads(1)
 random.seed(args.seed)
 os.environ['PYTHONHASHSEED'] = str(args.seed)
 np.random.seed(args.seed)
@@ -196,12 +203,16 @@ if __name__ == "__main__" :
         model = ThisNewNet(in_channels=args.inchannel, n_classes=args.outchannel, depth=args.mdepth, batch_norm=args.batchnorm, up_mode=args.upmode, dropout=bool(args.dropprob), 
                             scale_factor=model_scale_factor, num_features=args.nfeatures, sliceup_first=True if args.modelid==8 else False, 
                             loss_slice_count=args.tnnlslc, loss_inplane=args.tnnlinp)
-    elif args.modelID == 9:
+    elif args.modelid == 9:
         sys.exit("ResNet is not ready for different numbers of input and output channel")
         model=ResNet(n_channels=args.inchannel,is3D=True,res_blocks=14,starting_nfeatures=args.nfeatures,updown_blocks=2,is_relu_leaky=True, #TODO: put all params as args
                     do_batchnorm=args.batchnorm, res_drop_prob=0.2,out_act="sigmoid",forwardV=0, upinterp_algo='convtrans', post_interp_convtrans=False)
-    elif args.modelID == 10:
+    elif args.modelid == 10:
         model=ShuffleUNet(in_ch=args.inchannel, num_features=args.nfeatures, out_ch=args.outchannel)
+    elif args.modelid == 11:
+        model = UNetMSS(in_channels=args.inchannel, n_classes=args.outchannel, depth=args.mdepth, wf=round(math.log(args.nfeatures,2)), 
+                        batch_norm=args.batchnorm, up_mode=args.upmode, dropout=bool(args.dropprob),
+                        mss_level=args.msslevel, mss_fromlatent=args.msslatent, mss_up=args.mssup, mss_interpb4=args.mssinterpb4)
     else:
         sys.exit("Invalid Model ID")
 
@@ -228,6 +239,9 @@ if __name__ == "__main__" :
     inputs = {}
     results = {}
     targets = {}
+
+    if not args.wnbactive:
+        os.environ["WANDB_MODE"] = "dryrun"
 
     with torch.no_grad():
         runningSSIM = []
@@ -275,6 +289,7 @@ if __name__ == "__main__" :
                             tres = tmp_res[i].squeeze().numpy()
                             ttar = tmp_tar[i].squeeze().numpy()
 
+                        tin = tin[1,...] #TODO make it configurable. Currently its prevTPPatch, patch
                         markers[files[i]][startIndex_length:startIndex_length+args.patchsize[0], startIndex_width:startIndex_width+args.patchsize[1], startIndex_depth:startIndex_depth+args.patchsize[2]] += 1
                         inputs[files[i]][startIndex_length:startIndex_length+args.patchsize[0], startIndex_width:startIndex_width+args.patchsize[1], startIndex_depth:startIndex_depth+args.patchsize[2]] += np.moveaxis(tin, 0, -1) 
                         results[files[i]][startIndex_length:startIndex_length+args.patchsize[0], startIndex_width:startIndex_width+args.patchsize[1], startIndex_depth:startIndex_depth+args.patchsize[2]] += np.moveaxis(tres, 0, -1)

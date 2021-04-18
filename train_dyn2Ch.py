@@ -29,7 +29,7 @@ from utils.pLoss.perceptual_loss import PerceptualLoss
 from utils.utilities import getSSIM, tensorboard_images
 
 __author__ = "Soumick Chatterjee, Chompunuch Sarasaen"
-__copyright__ = "Copyright 2020, Faculty of Computer Science, Otto von Guericke University Magdeburg, Germany"
+__copyright__ = "Copyright 2021, Faculty of Computer Science, Otto von Guericke University Magdeburg, Germany"
 __credits__ = ["Soumick Chatterjee", "Chompunuch Sarasaen"]
 __license__ = "GPL"
 __version__ = "1.0.0"
@@ -48,7 +48,8 @@ modelIDs = {
     7: "UNETSRCNN",
     8: "SRCNNUNET",
     9: "ReconResNet",
-    10: "ShuffleUNet"
+    10: "ShuffleUNet",
+    11: "UNETMSS",
 }
 
 lossIDs = {
@@ -62,9 +63,9 @@ def parseARGS():
     ap = argparse.ArgumentParser()
     ap.add_argument("-g", "--gpu", default="0", help="GPU ID(s).") 
     ap.add_argument("--seed", default=2020, type=int, help="Seed") 
-    ap.add_argument("-ds", "--dataset", default=r'/project/schatter/Chimp/Data/CHAOSDynWoT2/', help="Path to Dataset Folder.")
+    ap.add_argument("-ds", "--dataset", default=r'/mnt/public/sarasaen/Data/CHAOSDynWoT2/', help="Path to Dataset Folder.")
     # ap.add_argument("-ds", "--dataset", default=r'/project/schatter/Chimp/Data/StaticFT/ChimpAbdomen/Protocol0/', help="Path to Dataset Folder.")
-    ap.add_argument("-us", "--us", default='Center6p25Mask', help="Undersample.")
+    ap.add_argument("-us", "--us", default='Center6p25MaskWoPad', help="Undersample.")
     ap.add_argument("-s", "--scalefact", default='(1,1,1)', help="Scaling Factor. For Zero padded data, set the dim to 1. [As a 3 valued tuple, factor for each dim. Supply seperated by coma or as a tuple, no spaces in between.].")
     ap.add_argument("-uf", "--usfolder", default='usTrain', help="Undersampled Folder.")
     ap.add_argument("-hf", "--hrfolder", default='hrTrain', help="HighRes (Fully-sampled) Folder.")
@@ -77,12 +78,12 @@ def parseARGS():
     ap.add_argument("-cpft", "--chkpointft", default=None, help="(To be used for Fine-Tuning) Checkpoint to Load for Fine-Tuning.")
     ap.add_argument("-c", "--cuda", type=bool, default=True, help="Use CUDA.")
     ap.add_argument("-mg", "--mulgpu", type=bool, default=False, help="Use Multiple GPU.")
-    ap.add_argument("-amp", "--amp", type=bool, default=False, help="Use AMP.")
-    ap.add_argument("-v", "--val", type=bool, default=False, help="Do Validation.")
+    ap.add_argument("-amp", "--amp", type=bool, default=True, help="Use AMP.")
+    ap.add_argument("-v", "--val", type=bool, default=True, help="Do Validation.")
     ap.add_argument("-vp", "--valdsper", type=float, default=0.3, help="Percentage of the DS to be used for Validation.")
     ap.add_argument("-p", "--profile", type=bool, default=False, help="Do Model Profiling.")
 
-    ap.add_argument("-ep", "--epochs", type=int, default=18, help="Total Number of Epochs. To use Number of Iterations, set it to None")
+    ap.add_argument("-ep", "--epochs", type=int, default=17, help="Total Number of Epochs. To use Number of Iterations, set it to None")
     ap.add_argument("-it", "--iterations", type=int, default=1e6, help="Total Number of Iterations. To be used if number of Epochs is None")
     ap.add_argument("-lr", "--lr", type=float, default=1e-4, help="Total Number of Epochs.")
     ap.add_argument("-ps", "--patchsize", default='(24,24,24)', help="Patch Size. Supply seperated by coma or as a tuple, no spaces in between. Set it to None if not desired.")
@@ -92,12 +93,16 @@ def parseARGS():
     ap.add_argument("-ml", "--medianloss", type=int, default=True, help="Use Median to get loss value (Final Reduction).")
 
     ap.add_argument("-mid", "--modelid", type=int, default=0, help="Model ID."+str(modelIDs))
-    ap.add_argument("-mbn", "--batchnorm", type=bool, default=False, help="(Only for Model ID 0) Do BatchNorm.")
-    ap.add_argument("-mum", "--upmode", default='upconv', help="(Only for Model ID 0) UpMode [upconv, upsample].")
-    ap.add_argument("-mdp", "--mdepth", type=int, default=3, help="(Only for Model ID 0 and 6) Depth of the Model.")
-    ap.add_argument("-d", "--dropprob", type=float, default=0.0, help="(Only for Model ID 0 and 6) Dropout Probability.")
+    ap.add_argument("-mbn", "--batchnorm", type=bool, default=False, help="(Only for Model ID 0, 11) Do BatchNorm.")
+    ap.add_argument("-mum", "--upmode", default='upconv', help="(Only for Model ID 0, 11) UpMode for model ID 0 and 11: [upconv, upsample], for model ID 9: [convtrans, <interp algo>]")
+    ap.add_argument("-mdp", "--mdepth", type=int, default=3, help="(Only for Model ID 0, 6, 11) Depth of the Model.")
+    ap.add_argument("-d", "--dropprob", type=float, default=0.0, help="(Only for Model ID 0, 6, 11) Dropout Probability.")
     ap.add_argument("-inc", "--inchannel", type=int, default=2, help="Number of Channels in the Data.")
     ap.add_argument("-otc", "--outchannel", type=int, default=1, help="Number of Channels in the Data.")
+    ap.add_argument("-mslvl", "--msslevel", type=int, default=2, help="(Only for Model ID 11) Depth of the Model.")
+    ap.add_argument("-msltn", "--msslatent", type=int, default=1, help="(Only for Model ID 11) Use the latent as one of the MSS level.")
+    ap.add_argument("-msup", "--mssup", default="trilinear", help="(Only for Model ID 11) Interpolation to use on the MSS levels.")
+    ap.add_argument("-msinb4", "--mssinterpb4", type=int, default=0, help="(Only for Model ID 11) Apply Interpolation before applying conv for the MSS levels. If False, interp will be applied after conv.")
     ap.add_argument("-is", "--inshape", default='(256,256,30)', help="Input Shape. Supply seperated by coma or as a tuple, no spaces in between. Will only be used if Patch Size is None.")
     ap.add_argument("-f", "--nfeatures", type=int, default=64, help="(Not for DenseNet) N Starting Features of the Network.")
     ap.add_argument("-lid", "--lossid", type=int, default=0, help="Loss ID."+str(lossIDs))
@@ -114,10 +119,11 @@ def parseARGS():
     ap.add_argument("-tli", "--tnnlinp", type=int, default=1, help="Solo per ThisNewNet. loss_inplane. Default 1")
 
     #WnB related params
+    ap.add_argument("-wnb", "--wnbactive", type=bool, default=True, help="WandB: Whether to use or not")
     ap.add_argument("-wnbp", "--wnbproject", default='SuperResMRI', help="WandB: Name of the project")
     ap.add_argument("-wnbe", "--wnbentity", default='mickchimp', help="WandB: Name of the entity")
     ap.add_argument("-wnbg", "--wnbgroup", default='dynDualChn', help="WandB: Name of the group")
-    ap.add_argument("-wnbpf", "--wnbprefix", default='1stRun_', help="WandB: Prefix for TrainID")
+    ap.add_argument("-wnbpf", "--wnbprefix", default='', help="WandB: Prefix for TrainID")
     ap.add_argument("-wnbml", "--wnbmodellog", default='all', help="WandB: While watching the model, what to save: gradients, parameters, all, None")
     ap.add_argument("-wnbmf", "--wnbmodelfreq", type=int, default=100, help="WandB: The number of steps between logging gradients")
 
@@ -126,6 +132,7 @@ def parseARGS():
 args = parseARGS()
 # os.environ["TMPDIR"] = "/scratch/schatter/tmp"
 # os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+torch.set_num_threads(1)
 random.seed(args.seed)
 os.environ['PYTHONHASHSEED'] = str(args.seed)
 np.random.seed(args.seed)
@@ -145,12 +152,17 @@ if __name__ == "__main__" :
         args.inshape = tuple(map(int, args.inshape.replace('(','').replace(')','').split(',')))
     args.modelname = args.usfolder + "_" + modelIDs[args.modelid] + args.modelsuffix   
 
-    if args.modelid == 0 or args.modelid == 6: 
+    if args.modelid == 0 or args.modelid == 6 or args.modelid == 11: 
         args.modelname += "do" + str(args.dropprob) +  "dp" + str(args.mdepth)
-    if args.modelid == 0:        
+    if args.modelid == 0 or args.modelid == 11:        
         args.modelname += args.upmode
         if args.batchnorm:
             args.modelname += "BN"    
+    if args.modelid == 11:
+        args.modelname += "MSS"+str(args.msslevel)
+        args.modelname += "Latent" if args.msslatent else "NoLatent"
+        args.modelname += args.mssup
+        args.modelname += "InterpB4" if args.mssinterpb4 else "NoInterpB4"
     trainID = args.modelname + '_' + args.us + '_' + lossIDs[args.lossid]
     if args.lossid == 0:
         trainID += args.plosstyp + 'lvl' + str(args.plosslvl)
@@ -226,12 +238,16 @@ if __name__ == "__main__" :
         model = ThisNewNet(in_channels=args.inchannel, n_classes=args.outchannel, depth=args.mdepth, batch_norm=args.batchnorm, up_mode=args.upmode, dropout=bool(args.dropprob), 
                             scale_factor=model_scale_factor, num_features=args.nfeatures, sliceup_first=True if args.modelid==8 else False, 
                             loss_slice_count=args.tnnlslc, loss_inplane=args.tnnlinp)
-    elif args.modelID == 9:
+    elif args.modelid == 9:
         sys.exit("ResNet is not ready for different numbers of input and output channel")
         model=ResNet(n_channels=args.inchannel,is3D=True,res_blocks=14,starting_nfeatures=args.nfeatures,updown_blocks=2,is_relu_leaky=True, #TODO: put all params as args
                     do_batchnorm=args.batchnorm, res_drop_prob=0.2,out_act="sigmoid",forwardV=0, upinterp_algo='convtrans', post_interp_convtrans=False)
-    elif args.modelID == 10:
+    elif args.modelid == 10:
         model=ShuffleUNet(in_ch=args.inchannel, num_features=args.nfeatures, out_ch=args.outchannel)
+    elif args.modelid == 11:
+        model = UNetMSS(in_channels=args.inchannel, n_classes=args.outchannel, depth=args.mdepth, wf=round(math.log(args.nfeatures,2)), 
+                        batch_norm=args.batchnorm, up_mode=args.upmode, dropout=bool(args.dropprob),
+                        mss_level=args.msslevel, mss_fromlatent=args.msslatent, mss_up=args.mssup, mss_interpb4=args.mssinterpb4)
     else:
         sys.exit("Invalid Model ID")
 
@@ -309,7 +325,10 @@ if __name__ == "__main__" :
         logging.error('Training should atleast be for one epoch. Adjusting to perform 1 epoch training')
         args.epochs = start_epoch+1
 
-    with wandb.init(project=args.wnbproject, entity=args.wnbentity, group=args.wnbgroup, config=args, name=args.wnbprefix+trainID, resume=True) as WnBRun:
+    if not args.wnbactive:
+        os.environ["WANDB_MODE"] = "dryrun"
+
+    with wandb.init(project=args.wnbproject, entity=args.wnbentity, group=args.wnbgroup, config=args, name=args.wnbprefix+trainID, id=args.wnbprefix+trainID, resume=True) as WnBRun:
         wandb.watch(model, log=args.wnbmodellog, log_freq=args.wnbmodelfreq)
 
         logging.info('Training Epochs: from {0} to {1}'.format(start_epoch, args.epochs-1))
@@ -337,6 +356,11 @@ if __name__ == "__main__" :
                             loss = loss_func(out, gt)
                     elif type(model) is ThisNewNet:
                         out, loss = model(images, gt=gt)
+                    elif type(model) is UNetMSS:
+                        out, mssout = model(images)
+                        loss = loss_func(out, gt)
+                        for mss in range(len(mssout)):
+                            loss += model.mss_coeff[mss] * loss_func(mssout[mss], gt)
                     else:
                         out = model(images)
                         loss = loss_func(out, gt)
@@ -361,7 +385,7 @@ if __name__ == "__main__" :
                     # tensorboard_images(tb_writer, inp, out.detach(), gt, epoch, 'train')
                     runningLoss = []
             
-            if epoch % args.savefreq == 0:            
+            if args.finetune or (epoch % args.savefreq == 0):            
                 checkpoint = {
                     'epoch': epoch,
                     'iterations': (epoch+1)*len(train_loader),
@@ -371,8 +395,9 @@ if __name__ == "__main__" :
                     'AMPScaler': scaler.state_dict()         
                 }
                 torch.save(checkpoint, os.path.join(save_path, trainID+".pth.tar"))
-                torch.onnx.export(model, images, trainID+".onnx", input_names=["HRPrevTP+LRCurrTP"], output_names=["SuperResolvedCurrTP"])
-                wandb.save(trainID+".onnx")
+                if args.modelid != 9 and args.modelid != 6:
+                    torch.onnx.export(model, images, trainID+".onnx", input_names=["HRPrevTP+LRCurrTP"], output_names=["SuperResolvedCurrTP"])
+                    wandb.save(trainID+".onnx")
 
             tb_writer.add_scalar('Train/EpochLoss', loss_reducer(train_loss), epoch)
             wandb.log({"TrainEpochLoss":loss_reducer(train_loss)})#, step=epoch)
@@ -427,7 +452,7 @@ if __name__ == "__main__" :
                             runningLoss = []
                             runningAcc = []
 
-                    if loss_reducer(val_loss) > best_loss:
+                    if (loss_reducer(val_loss) < best_loss and not IsNegLoss) or (loss_reducer(val_loss) > best_loss and IsNegLoss):
                         best_loss = loss_reducer(val_loss)
                         WnBRun.summary["best_loss"] = best_loss
                         checkpoint = {
@@ -438,8 +463,9 @@ if __name__ == "__main__" :
                             'AMPScaler': scaler.state_dict()         
                         }
                         torch.save(checkpoint, os.path.join(save_path, trainID+"_best.pth.tar"))
-                        torch.onnx.export(model, images, trainID+"_best.onnx", input_names=["HRPrevTP", "LRCurrTP"], output_names=["SuperResolvedCurrTP"])
-                        wandb.save(trainID+"_best.onnx")
+                if args.modelid != 9 and args.modelid != 6:
+                            torch.onnx.export(model, images, trainID+"_best.onnx", input_names=["HRPrevTP+LRCurrTP"], output_names=["SuperResolvedCurrTP"])
+                            wandb.save(trainID+"_best.onnx")
                 tb_writer.add_scalar('Val/EpochLoss', loss_reducer(val_loss), epoch)
                 wandb.log({"ValEpochLoss":loss_reducer(val_loss)})#, step=epoch)
                 tb_writer.add_scalar('Val/EpochSSIM', loss_reducer(val_acc), epoch)

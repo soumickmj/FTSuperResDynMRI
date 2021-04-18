@@ -130,3 +130,6 @@ dmypy.json
 models/brokenconv.py
 rough.py
 utils/pLoss/VesselSeg_UNet3d_DeepSup.pth
+wandb/*
+gpurun.sh
+*.onnx
