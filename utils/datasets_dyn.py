@@ -409,7 +409,8 @@ class SRDataset(Dataset):
         targetPatch = targetPatch.unsqueeze(0)
 
         if self.return_coords is True:
-            return patch, targetPatch, np.array(start_coords), os.path.basename(self.data.iloc[index][self.LABEL_FILE_NAME]), np.array([(self.data.iloc[index][self.LABEL_FILE_SHAPE]), (self.data.iloc[index][self.IMAGE_FILE_SHAPE])]), np.array(pad[::-1])
+            lblfilename = self.data.iloc[index][self.LABEL_FILE_NAME]
+            return patch, targetPatch, np.array(start_coords), os.path.basename(os.path.dirname(lblfilename)) +"_"+os.path.basename(lblfilename), np.array([(self.data.iloc[index][self.LABEL_FILE_SHAPE]), (self.data.iloc[index][self.IMAGE_FILE_SHAPE])]), np.array(pad[::-1])
         else:
             return patch, targetPatch
 

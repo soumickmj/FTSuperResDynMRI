@@ -146,9 +146,14 @@ if __name__ == "__main__" :
 
     args.chkpoint = os.path.join(args.outpath, args.outfolder, args.modelname, args.modelname)
     if args.modelbest:
+        print('best model testing')
         args.chkpoint += "_best.pth.tar"
     else:
         args.chkpoint += ".pth.tar"    
+
+    if args.patchstride:
+        args.modelname += "_infstr" + "c".join(list(map(str, args.patchstride)))
+        args.modelname = args.modelname.replace(args.usfolder+"_", "")
 
     print("Testing: "+args.modelname)
     if args.modelid == 2:

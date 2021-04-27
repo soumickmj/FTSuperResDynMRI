@@ -72,8 +72,8 @@ def parseARGS():
     ap.add_argument("-bs", "--batchsize", type=int, default=96, help="Batch Size.")
     ap.add_argument("-nw", "--nworkers", type=int, default=8, help="Number of Workers.")
 
-    ap.add_argument("-m", "--modelname", default="usCHAOSWoT2_UNETFreshdo0.0dp3upsample_Center6p25MaskWoPad_pLossL1lvl3", help="Model to Load for testing.")
-    ap.add_argument("-mb", "--modelbest", type=bool, default=False, help="Model to Load for testing.")
+    ap.add_argument("-m", "--modelname", default="", help="Model to Load for testing.")
+    ap.add_argument("-mb", "--modelbest", type=int, default=0, help="Model to Load for testing.")
     ap.add_argument("-c", "--cuda", type=bool, default=True, help="Use CUDA.")
     ap.add_argument("-mg", "--mulgpu", type=bool, default=False, help="Use Multiple GPU.")
     ap.add_argument("-amp", "--amp", type=bool, default=True, help="Use AMP.")
@@ -98,9 +98,9 @@ def parseARGS():
     ap.add_argument("-mdp", "--mdepth", type=int, default=3, help="(Only for Model ID 0, 6, 11) Depth of the Model.")
     ap.add_argument("-d", "--dropprob", type=float, default=0.0, help="(Only for Model ID 0, 6, 11) Dropout Probability.")
     ap.add_argument("-mslvl", "--msslevel", type=int, default=2, help="(Only for Model ID 11) Depth of the Model.")
-    ap.add_argument("-msltn", "--msslatent", type=bool, default=True, help="(Only for Model ID 11) Use the latent as one of the MSS level.")
+    ap.add_argument("-msltn", "--msslatent", type=int, default=1, help="(Only for Model ID 11) Use the latent as one of the MSS level.")
     ap.add_argument("-msup", "--mssup", default="trilinear", help="(Only for Model ID 11) Interpolation to use on the MSS levels.")
-    ap.add_argument("-msinb4", "--mssinterpb4", type=bool, default=False, help="(Only for Model ID 11) Apply Interpolation before applying conv for the MSS levels. If False, interp will be applied after conv.")
+    ap.add_argument("-msinb4", "--mssinterpb4", type=int, default=1, help="(Only for Model ID 11) Apply Interpolation before applying conv for the MSS levels. If False, interp will be applied after conv.")
     ap.add_argument("-f", "--nfeatures", type=int, default=64, help="(Not for DenseNet) N Starting Features of the Network.")
     ap.add_argument("-lid", "--lossid", type=int, default=0, help="Loss ID."+str(lossIDs))
     ap.add_argument("-plt", "--plosstyp", default="L1", help="(Only for Loss ID 0) Perceptual Loss Type.")
@@ -114,6 +114,7 @@ def parseARGS():
     ap.add_argument("-tli", "--tnnlinp", type=int, default=1, help="Solo per ThisNewNet. loss_inplane. Default 1")
 
     #WnB related params
+    ap.add_argument("-wnb", "--wnbactive", type=bool, default=True, help="WandB: Whether to use or not")
     ap.add_argument("-wnbp", "--wnbproject", default='SuperResMRI', help="WandB: Name of the project")
     ap.add_argument("-wnbe", "--wnbentity", default='mickchimp', help="WandB: Name of the entity")
     ap.add_argument("-wnbg", "--wnbgroup", default='staticTPSR', help="WandB: Name of the group")
@@ -148,6 +149,10 @@ if __name__ == "__main__" :
         args.chkpoint += "_best.pth.tar"
     else:
         args.chkpoint += ".pth.tar"    
+
+    if args.patchstride:
+        args.modelname += "_infstr" + "c".join(list(map(str, args.patchstride)))
+        args.modelname = args.modelname.replace(args.usfolder+"_", "")
 
     print("Testing: "+args.modelname)
     if args.modelid == 2:
@@ -234,6 +239,9 @@ if __name__ == "__main__" :
     inputs = {}
     results = {}
     targets = {}
+
+    if not args.wnbactive:
+        os.environ["WANDB_MODE"] = "dryrun"
 
     with torch.no_grad():
         runningSSIM = []
