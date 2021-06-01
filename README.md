@@ -17,10 +17,8 @@ BibTeX entry:
 @article{sarasaen2021fine,
   title={Fine-tuning deep learning model parameters for improved super-resolution of dynamic MRI with prior-knowledge},
   author={Sarasaen, Chompunuch and Chatterjee, Soumick and Breitkopf, Mario and Rose, Georg and N{\"u}rnberger, Andreas and Speck, Oliver},
-  journal={Artificial Intelligence in Medicine},
-  eprint={2102.02711},
-  archivePrefix = {arXiv},
-  year="\noop{2021}in review"
+  journal={arXiv preprint arXiv:2102.02711},
+  year={2021}
 }
 ```
 Thank you so much for your support.
