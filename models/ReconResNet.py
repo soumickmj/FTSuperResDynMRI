@@ -80,6 +80,8 @@ class ResNet(nn.Module):
                         out_act="sigmoid", forwardV=0, upinterp_algo='convtrans', post_interp_convtrans=False, is3D=False): #should use 14 as that gives number of trainable parameters close to number of possible pixel values in a image 256x256 
         super(ResNet, self).__init__()
 
+        print(upinterp_algo) #remove TODO
+
         layers = {}
         if is3D:
             layers["layer_conv"] = nn.Conv3d

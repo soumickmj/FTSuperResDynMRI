@@ -66,7 +66,7 @@ def parseARGS():
     ap.add_argument("-ds", "--dataset", default=r'/mnt/public/sarasaen/Data/StaticFT/ChimpAbdomen/Protocol2/', help="Path to Dataset Folder.")
     ap.add_argument("-us", "--us", default='Center6p25MaskWoPad', help="Undersample.")
     ap.add_argument("-s", "--scalefact", default='(1,1,1)', help="Scaling Factor. For Zero padded data, set the dim to 1. [As a 3 valued tuple, factor for each dim. Supply seperated by coma or as a tuple, no spaces in between.].")
-    ap.add_argument("-uf", "--usfolder", default='srTest', help="Undersampled Folder.")
+    ap.add_argument("-uf", "--usfolder", default='usTest', help="Undersampled Folder.")
     ap.add_argument("-hf", "--hrfolder", default='hrTest', help="HighRes (Fully-sampled) Folder.")
     ap.add_argument("-o", "--outfolder", default='staticTPSR', help="Output Folder.")
     ap.add_argument("-ms", "--modelsuffix", default='NewFT', help="Any Suffix To Add with the Model Name.")
@@ -129,7 +129,7 @@ def parseARGS():
 
 args = parseARGS()
 # os.environ["TMPDIR"] = "/scratch/schatter/tmp"
-# os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 torch.set_num_threads(1)
 random.seed(args.seed)
 os.environ['PYTHONHASHSEED'] = str(args.seed)

@@ -59,9 +59,9 @@ def parseARGS():
     ap = argparse.ArgumentParser()
     ap.add_argument("-g", "--gpu", default="1", help="GPU ID(s).") 
     ap.add_argument("--seed", default=2020, type=int, help="Seed") 
-    ap.add_argument("-ds", "--dataset", default=r'/mnt/public/sarasaen/Data/3DDynTest/ChimpAbdomen/DynProtocol0/', help="Path to Dataset Folder.")
-    ap.add_argument("-op", "--outpath", default=r'/mnt/public/sarasaen/Data/StaticFT/ChimpAbdomen/Protocol2/', help="Path for Output.")
-    ap.add_argument("-ot", "--outtype", default=r'Chimp3DDyn0_woZpad', help="Type of Recon currently being performed.")
+    ap.add_argument("-ds", "--dataset", default=r'/mnt/public/sarasaen/Data/3DDynTest/FatyAbdomen/DynProtocol0/Filtered/', help="Path to Dataset Folder.")
+    ap.add_argument("-op", "--outpath", default=r'/mnt/public/sarasaen/Data/StaticFT/FatyAbdomen/Protocol1/', help="Path for Output.")
+    ap.add_argument("-ot", "--outtype", default=r'Faty3DDyn0_woZpad', help="Type of Recon currently being performed.")
 
     ap.add_argument("-us", "--us", default='Center6p25MaskWoPadTP10', help="Undersample.")
     ap.add_argument("-s", "--scalefact", default='(1,1,1)', help="Scaling Factor. For Zero padded data, set the dim to 1. [As a 3 valued tuple, factor for each dim. Supply seperated by coma or as a tuple, no spaces in between.].")
@@ -72,7 +72,7 @@ def parseARGS():
     ap.add_argument("-bs", "--batchsize", type=int, default=96, help="Batch Size.")
     ap.add_argument("-nw", "--nworkers", type=int, default=8, help="Number of Workers.")
 
-    ap.add_argument("-m", "--modelname", default="", help="Model to Load for testing.")
+    ap.add_argument("-m", "--modelname", default="usTest_UNETValNewFTFatydo0.0dp3upconv_Center6p25MaskWoPad_pLossL1lvl3_FT_lrdec100_itrt0.1", help="Model to Load for testing.")
     ap.add_argument("-mb", "--modelbest", type=int, default=0, help="Model to Load for testing.")
     ap.add_argument("-c", "--cuda", type=bool, default=True, help="Use CUDA.")
     ap.add_argument("-mg", "--mulgpu", type=bool, default=False, help="Use Multiple GPU.")

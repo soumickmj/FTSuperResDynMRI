@@ -70,7 +70,7 @@ def parseARGS():
     ap.add_argument("-uf", "--usfolder", default='usTrain', help="Undersampled Folder.")
     ap.add_argument("-hf", "--hrfolder", default='hrTrain', help="HighRes (Fully-sampled) Folder.")
     ap.add_argument("-o", "--outfolder", default='dynDualChn', help="Output Folder.")
-    ap.add_argument("-ms", "--modelsuffix", default='', help="Any Suffix To Add with the Model Name.")
+    ap.add_argument("-ms", "--modelsuffix", default='DSv1', help="Any Suffix To Add with the Model Name.")
     ap.add_argument("-bs", "--batchsize", type=int, default=96, help="Batch Size.")
     ap.add_argument("-nw", "--nworkers", type=int, default=8, help="Number of Workers.")
 

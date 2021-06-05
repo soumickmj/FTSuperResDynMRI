@@ -24,12 +24,12 @@ from models.ReconResNet import ResNet
 from models.ShuffleUNet.net import ShuffleUNet
 from models.ThisNewNet import ThisNewNet
 from utils.data import *
-from utils.datasets import SRDataset
+from utils.datasets_dyn import SRDataset
 from utils.pLoss.perceptual_loss import PerceptualLoss
 from utils.utilities import getSSIM, tensorboard_images
 
 __author__ = "Soumick Chatterjee, Chompunuch Sarasaen"
-__copyright__ = "Copyright 2020, Faculty of Computer Science, Otto von Guericke University Magdeburg, Germany"
+__copyright__ = "Copyright 2021, Faculty of Computer Science, Otto von Guericke University Magdeburg, Germany"
 __credits__ = ["Soumick Chatterjee", "Chompunuch Sarasaen"]
 __license__ = "GPL"
 __version__ = "1.0.0"
@@ -63,18 +63,18 @@ def parseARGS():
     ap = argparse.ArgumentParser()
     ap.add_argument("-g", "--gpu", default="0", help="GPU ID(s).") 
     ap.add_argument("--seed", default=2020, type=int, help="Seed") 
-    ap.add_argument("-ds", "--dataset", default=r'/mnt/public/sarasaen/Data/StaticFT/ChimpAbdomen/Protocol2/', help="Path to Dataset Folder.")
+    ap.add_argument("-ds", "--dataset", default=r'/mnt/public/sarasaen/Data/3DDynTest/FatyAbdomen/DynProtocol0/', help="Path to Dataset Folder.")
     ap.add_argument("-us", "--us", default='Center6p25MaskWoPad', help="Undersample.")
     ap.add_argument("-s", "--scalefact", default='(1,1,1)', help="Scaling Factor. For Zero padded data, set the dim to 1. [As a 3 valued tuple, factor for each dim. Supply seperated by coma or as a tuple, no spaces in between.].")
-    ap.add_argument("-uf", "--usfolder", default='srTest', help="Undersampled Folder.")
-    ap.add_argument("-hf", "--hrfolder", default='hrTest', help="HighRes (Fully-sampled) Folder.")
-    ap.add_argument("-o", "--outfolder", default='staticTPSR', help="Output Folder.")
-    ap.add_argument("-ms", "--modelsuffix", default='NewFT', help="Any Suffix To Add with the Model Name.")
+    ap.add_argument("-uf", "--usfolder", default='usTrainDyn', help="Undersampled Folder.")
+    ap.add_argument("-hf", "--hrfolder", default='hrTrainDyn', help="HighRes (Fully-sampled) Folder.")
+    ap.add_argument("-o", "--outfolder", default='dynDualChn', help="Output Folder.")
+    ap.add_argument("-ms", "--modelsuffix", default='NewFTconFaty', help="Any Suffix To Add with the Model Name.")
     ap.add_argument("-bs", "--batchsize", type=int, default=96, help="Batch Size.")
     ap.add_argument("-nw", "--nworkers", type=int, default=8, help="Number of Workers.")
 
     ap.add_argument("-cp", "--chkpoint", default=None, help="Checkpoint (of the current training) to Load.")
-    ap.add_argument("-cpft", "--chkpointft", default="", help="(To be used for Fine-Tuning) Checkpoint to Load for Fine-Tuning.")
+    ap.add_argument("-cpft", "--chkpointft", default=r"/mnt/public/sarasaen/Data/CHAOSDynWoT2/dynDualChn/usTrain_UNETdo0.0dp3upconv_Center6p25MaskWoPad_pLossL1lvl3/usTrain_UNETdo0.0dp3upconv_Center6p25MaskWoPad_pLossL1lvl3_best.pth.tar", help="(To be used for Fine-Tuning) Checkpoint to Load for Fine-Tuning.")
     ap.add_argument("-c", "--cuda", type=bool, default=True, help="Use CUDA.")
     ap.add_argument("-mg", "--mulgpu", type=bool, default=False, help="Use Multiple GPU.")
     ap.add_argument("-amp", "--amp", type=bool, default=True, help="Use AMP.")
@@ -82,7 +82,7 @@ def parseARGS():
     ap.add_argument("-vp", "--valdsper", type=float, default=0.3, help="Percentage of the DS to be used for Validation.")
     ap.add_argument("-p", "--profile", type=bool, default=False, help="Do Model Profiling.")
 
-    ap.add_argument("-ep", "--epochs", type=int, default=150, help="Total Number of Epochs. To use Number of Iterations, set it to None")
+    ap.add_argument("-ep", "--epochs", type=int, default=17, help="Total Number of Epochs. To use Number of Iterations, set it to None")
     ap.add_argument("-it", "--iterations", type=int, default=1e6, help="Total Number of Iterations. To be used if number of Epochs is None")
     ap.add_argument("-lr", "--lr", type=float, default=1e-4, help="Total Number of Epochs.")
     ap.add_argument("-ps", "--patchsize", default='(24,24,24)', help="Patch Size. Supply seperated by coma or as a tuple, no spaces in between. Set it to None if not desired.")
@@ -96,11 +96,12 @@ def parseARGS():
     ap.add_argument("-mum", "--upmode", default='upconv', help="(Only for Model ID 0, 11) UpMode for model ID 0 and 11: [upconv, upsample], for model ID 9: [convtrans, <interp algo>]")
     ap.add_argument("-mdp", "--mdepth", type=int, default=3, help="(Only for Model ID 0, 6, 11) Depth of the Model.")
     ap.add_argument("-d", "--dropprob", type=float, default=0.0, help="(Only for Model ID 0, 6, 11) Dropout Probability.")
+    ap.add_argument("-inc", "--inchannel", type=int, default=2, help="Number of Channels in the Data.")
+    ap.add_argument("-otc", "--outchannel", type=int, default=1, help="Number of Channels in the Data.")
     ap.add_argument("-mslvl", "--msslevel", type=int, default=2, help="(Only for Model ID 11) Depth of the Model.")
     ap.add_argument("-msltn", "--msslatent", type=int, default=1, help="(Only for Model ID 11) Use the latent as one of the MSS level.")
     ap.add_argument("-msup", "--mssup", default="trilinear", help="(Only for Model ID 11) Interpolation to use on the MSS levels.")
     ap.add_argument("-msinb4", "--mssinterpb4", type=int, default=1, help="(Only for Model ID 11) Apply Interpolation before applying conv for the MSS levels. If False, interp will be applied after conv.")
-    ap.add_argument("-nc", "--nchannel", type=int, default=1, help="Number of Channels in the Data.")
     ap.add_argument("-is", "--inshape", default='(256,256,30)', help="Input Shape. Supply seperated by coma or as a tuple, no spaces in between. Will only be used if Patch Size is None.")
     ap.add_argument("-f", "--nfeatures", type=int, default=64, help="(Not for DenseNet) N Starting Features of the Network.")
     ap.add_argument("-lid", "--lossid", type=int, default=0, help="Loss ID."+str(lossIDs))
@@ -120,7 +121,7 @@ def parseARGS():
     ap.add_argument("-wnb", "--wnbactive", type=bool, default=True, help="WandB: Whether to use or not")
     ap.add_argument("-wnbp", "--wnbproject", default='SuperResMRI', help="WandB: Name of the project")
     ap.add_argument("-wnbe", "--wnbentity", default='mickchimp', help="WandB: Name of the entity")
-    ap.add_argument("-wnbg", "--wnbgroup", default='staticTPSR', help="WandB: Name of the group")
+    ap.add_argument("-wnbg", "--wnbgroup", default='dynDualChn', help="WandB: Name of the group")
     ap.add_argument("-wnbpf", "--wnbprefix", default='', help="WandB: Prefix for TrainID")
     ap.add_argument("-wnbml", "--wnbmodellog", default='all', help="WandB: While watching the model, what to save: gradients, parameters, all, None")
     ap.add_argument("-wnbmf", "--wnbmodelfreq", type=int, default=100, help="WandB: The number of steps between logging gradients")
@@ -171,8 +172,8 @@ if __name__ == "__main__" :
         else:
             trainID += "_itrt" + str(args.ftitrt)
 
-    print("Training: "+trainID)
-    
+    print("Training: "+trainID)    
+
     if args.modelid == 2:
         SRCNN3D = SRCNN3Dv2
     elif args.modelid == 3:
@@ -206,7 +207,7 @@ if __name__ == "__main__" :
 
     trainDS = SRDataset(logger=logging, patch_size=args.patchsize[0], dir_path=dir_path, label_dir_path=label_dir_path, #TODO: implement non-iso patch-size, now only using the first element
                         stride_depth=args.patchstride[2], stride_length=args.patchstride[0], stride_width=args.patchstride[1], Size=None, fly_under_percent=None, #TODO: implement fly_under_percent, if needed 
-                        patch_size_us=None, pre_interpolate=args.preint, norm_data=args.prenorm, pre_load=True) #TODO implement patch_size_us if required - patch_size//scaling_factor
+                        patch_size_us=None, pre_interpolate=args.preint, norm_data=args.prenorm, pre_load=False) #TODO implement patch_size_us if required - patch_size//scaling_factor
 
     model_scale_factor=tuple(np.roll(args.scalefact,shift=1))
 
@@ -219,29 +220,31 @@ if __name__ == "__main__" :
 
     if bool(args.patchsize):
         args.inshape = args.patchsize
-    
+
     train_loader = DataLoader(dataset=trainDS, batch_size=args.batchsize,shuffle=True, num_workers=args.nworkers, pin_memory=True)
     val_loader = None if not args.val else DataLoader(dataset=valDS,batch_size=args.batchsize,shuffle=False, num_workers=args.nworkers, pin_memory=True)
 
     if args.modelid == 0:
-        model = UNet(in_channels=args.nchannel, n_classes=args.nchannel, depth=args.mdepth, wf=round(math.log(args.nfeatures,2)), batch_norm=args.batchnorm, up_mode=args.upmode, dropout=bool(args.dropprob))
+        model = UNet(in_channels=args.inchannel, n_classes=args.outchannel, depth=args.mdepth, wf=round(math.log(args.nfeatures,2)), batch_norm=args.batchnorm, up_mode=args.upmode, dropout=bool(args.dropprob))
     elif (args.modelid == 1) or (args.modelid == 2) or (args.modelid == 3):
+        sys.exit("SRCNN3D is not ready for different numbers of input and output channel")
         model = SRCNN3D(n_channels=args.nchannel, scale_factor=model_scale_factor, num_features=args.nfeatures)    
     elif (args.modelid == 4) or (args.modelid == 5):
-        model = UNetVSeg(in_ch=args.nchannel, out_ch=args.nchannel, n1=args.nfeatures)   
+        model = UNetVSeg(in_ch=args.inchannel, out_ch=args.outchannel, n1=args.nfeatures)   
     elif args.modelid == 6:
-        model = DenseNet(model_depth=args.mdepth, n_input_channels=args.nchannel, num_classes=args.nchannel, drop_rate=args.dropprob)
+        model = DenseNet(model_depth=args.mdepth, n_input_channels=args.inchannel, num_classes=args.outchannel, drop_rate=args.dropprob)
     elif (args.modelid == 7) or (args.modelid == 8):
-        model = ThisNewNet(in_channels=args.nchannel, n_classes=args.nchannel, depth=args.mdepth, batch_norm=args.batchnorm, up_mode=args.upmode, dropout=bool(args.dropprob), 
+        model = ThisNewNet(in_channels=args.inchannel, n_classes=args.outchannel, depth=args.mdepth, batch_norm=args.batchnorm, up_mode=args.upmode, dropout=bool(args.dropprob), 
                             scale_factor=model_scale_factor, num_features=args.nfeatures, sliceup_first=True if args.modelid==8 else False, 
                             loss_slice_count=args.tnnlslc, loss_inplane=args.tnnlinp)
     elif args.modelid == 9:
-        model=ResNet(n_channels=args.nchannel,is3D=True,res_blocks=14,starting_nfeatures=args.nfeatures,updown_blocks=2,is_relu_leaky=True, #TODO: put all params as args
-                    do_batchnorm=args.batchnorm, res_drop_prob=0.2,out_act="sigmoid",forwardV=0, upinterp_algo=args.upmode, post_interp_convtrans=False)
+        sys.exit("ResNet is not ready for different numbers of input and output channel")
+        model=ResNet(n_channels=args.inchannel,is3D=True,res_blocks=14,starting_nfeatures=args.nfeatures,updown_blocks=2,is_relu_leaky=True, #TODO: put all params as args
+                    do_batchnorm=args.batchnorm, res_drop_prob=0.2,out_act="sigmoid",forwardV=0, upinterp_algo='convtrans', post_interp_convtrans=False)
     elif args.modelid == 10:
-        model=ShuffleUNet(in_ch=args.nchannel, num_features=args.nfeatures, out_ch=args.nchannel)
+        model=ShuffleUNet(in_ch=args.inchannel, num_features=args.nfeatures, out_ch=args.outchannel)
     elif args.modelid == 11:
-        model = UNetMSS(in_channels=args.nchannel, n_classes=args.nchannel, depth=args.mdepth, wf=round(math.log(args.nfeatures,2)), 
+        model = UNetMSS(in_channels=args.inchannel, n_classes=args.outchannel, depth=args.mdepth, wf=round(math.log(args.nfeatures,2)), 
                         batch_norm=args.batchnorm, up_mode=args.upmode, dropout=bool(args.dropprob),
                         mss_level=args.msslevel, mss_fromlatent=args.msslatent, mss_up=args.mssup, mss_interpb4=args.mssinterpb4)
     else:
@@ -253,7 +256,7 @@ if __name__ == "__main__" :
         IsDeepSup = False
 
     if args.profile:
-        dummy = torch.randn(args.batchsize, args.nchannel, *args.inshape)
+        dummy = torch.randn(args.batchsize, args.inchannel, *args.inshape)
         with profiler.profile(profile_memory=True, record_shapes=True, use_cuda=True) as prof:
             model(dummy)
             prof.export_chrome_trace(os.path.join(save_path, 'model_trace'))
@@ -264,15 +267,15 @@ if __name__ == "__main__" :
     model.to(device)
 
     if args.lossid == 0:
-        if args.nchannel != 1:
+        if args.outchannel != 1:
             sys.exit("Perceptual Loss used here only works for 1 channel images")
         loss_func = PerceptualLoss(device=device, loss_model="unet3Dds", resize=None, loss_type=args.plosstyp, n_level=args.plosslvl)
     elif args.lossid == 1:
         loss_func = nn.L1Loss(reduction='mean')
     elif args.lossid == 2:
-        loss_func = MultiSSIM(data_range=1, n_channels=args.nchannel, reduction='mean').to(device)
+        loss_func = MultiSSIM(data_range=1, n_channels=args.outchannel, reduction='mean').to(device)
     elif args.lossid == 3:
-        loss_func = SSIM(data_range=1, channel=args.nchannel, spatial_dims=3).to(device)
+        loss_func = SSIM(data_range=1, channel=args.outchannel, spatial_dims=3).to(device)
     else:
         sys.exit("Invalid Loss ID")
     if (args.lossid == 0 and args.plosstyp == "L1") or (args.lossid == 1):
@@ -335,8 +338,8 @@ if __name__ == "__main__" :
             train_loss = []
             print('Epoch '+ str(epoch)+ ': Train')
             for i, (images, gt) in enumerate(tqdm(train_loader)):
-                images = images[:, None, ...].to(device)  
-                gt = gt[:, None, ...].to(device)  
+                images = images.to(device)  
+                gt = gt.to(device)  
 
                 with autocast(enabled=args.amp):
                     if type(model) is SRCNN3D:
@@ -372,7 +375,7 @@ if __name__ == "__main__" :
                 loss = round((-loss).data.item(),4) if IsNegLoss else round(loss.data.item(),4)
                 train_loss.append(loss)
                 runningLoss.append(loss)
-                logging.info('[%d/%d][%d/%d] Train Loss: %.4f' % ((epoch+1), args.epochs, i, len(train_loader), loss))
+                logging.info('[%d/%d][%d/%d] Train Loss: %.4f' % ((epoch+1), args.epochs, i, len(train_loader), loss))                
 
                 if i % args.logfreq == 0:
                     niter = epoch*len(train_loader)+i
@@ -381,7 +384,7 @@ if __name__ == "__main__" :
                     # tensorboard_images(tb_writer, inp, out.detach(), gt, epoch, 'train')
                     runningLoss = []
             
-            if args.finetune or (epoch % args.savefreq == 0):              
+            if args.finetune or (epoch % args.savefreq == 0):            
                 checkpoint = {
                     'epoch': epoch,
                     'iterations': (epoch+1)*len(train_loader),
@@ -391,8 +394,8 @@ if __name__ == "__main__" :
                     'AMPScaler': scaler.state_dict()         
                 }
                 torch.save(checkpoint, os.path.join(save_path, trainID+".pth.tar"))
-                if args.modelid != 9:
-                    torch.onnx.export(model, images, trainID+".onnx", input_names=["LRCurrTP"], output_names=["SuperResolvedCurrTP"])
+                if args.modelid != 9 and args.modelid != 6:
+                    torch.onnx.export(model, images, trainID+".onnx", input_names=["HRPrevTP+LRCurrTP"], output_names=["SuperResolvedCurrTP"])
                     wandb.save(trainID+".onnx")
 
             tb_writer.add_scalar('Train/EpochLoss', loss_reducer(train_loss), epoch)
@@ -408,8 +411,8 @@ if __name__ == "__main__" :
                     val_acc = []
                     print('Epoch '+ str(epoch)+ ': Val')
                     for i, (images, gt) in enumerate(tqdm(val_loader)):
-                        images = images[:, None, ...].to(device)  
-                        gt = gt[:, None, ...].to(device) 
+                        images = images.to(device)  
+                        gt = gt.to(device) 
 
                         with autocast(enabled=args.amp):
                             if type(model) is SRCNN3D:
@@ -459,8 +462,8 @@ if __name__ == "__main__" :
                             'AMPScaler': scaler.state_dict()         
                         }
                         torch.save(checkpoint, os.path.join(save_path, trainID+"_best.pth.tar"))
-                        if args.modelid != 9:
-                            torch.onnx.export(model, images, trainID+"_best.onnx", input_names=["LRCurrTP"], output_names=["SuperResolvedCurrTP"])
+                if args.modelid != 9 and args.modelid != 6:
+                            torch.onnx.export(model, images, trainID+"_best.onnx", input_names=["HRPrevTP+LRCurrTP"], output_names=["SuperResolvedCurrTP"])
                             wandb.save(trainID+"_best.onnx")
                 tb_writer.add_scalar('Val/EpochLoss', loss_reducer(val_loss), epoch)
                 wandb.log({"ValEpochLoss":loss_reducer(val_loss)})#, step=epoch)
