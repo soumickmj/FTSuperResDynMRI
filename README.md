@@ -9,7 +9,7 @@ The pre-print of this work is available on ArXiv: https://arxiv.org/abs/2102.027
 
 Abstract of this work was presented at ISMRM 2021 (Abstract available on RG: https://www.researchgate.net/publication/349588965_Fine-tuning_deep_learning_model_parameters_for_improved_super-resolution_of_dynamic_MRI_with_prior-knowledge)
 
-Furher extension of this work, DDoS model, also incorporates the temporal information to improve the reconstruction further.
+Furher extension of this work, DDoS model, also incorporates the temporal information to improve the reconstruction further, was presented as an abstract at ESMRMB 2021 (Abstract availalble on RG: https://www.researchgate.net/publication/354888919_DDoS_Dynamic_Dual-Channel_U-Net_for_Improving_Deep_Learning_Based_Super-Resolution_of_Abdominal_Dynamic_MRI)
 ## Credits
 
 If you like this repository, please click on Star!
