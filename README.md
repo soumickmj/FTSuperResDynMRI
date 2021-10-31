@@ -1,8 +1,11 @@
 # Fine-tuning deep learning model parameters for improved super-resolution of dynamic MRI with prior-knowledge
 Official code of the paper "Fine-tuning deep learning model parameters for improved super-resolution of dynamic MRI with prior-knowledge" (https://doi.org/10.1016/j.artmed.2021.102196 or https://arxiv.org/abs/2102.02711)
 
+
 You can access this paper for free directly from Elsevier (till 15th Dec): https://lnkd.in/d4Dti_Pw
+
 The pre-print of this work is available on ArXiv: https://arxiv.org/abs/2102.02711
+
 
 Abstract of this work was presented at ISMRM 2021 (Abstract available on RG: https://www.researchgate.net/publication/349588965_Fine-tuning_deep_learning_model_parameters_for_improved_super-resolution_of_dynamic_MRI_with_prior-knowledge)
 
