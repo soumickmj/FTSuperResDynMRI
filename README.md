@@ -1,5 +1,5 @@
 # Fine-tuning deep learning model parameters for improved super-resolution of dynamic MRI with prior-knowledge
-Official code of the paper "Fine-tuning deep learning model parameters for improved super-resolution of dynamic MRI with prior-knowledge" (https://doi.org/10.1016/j.artmed.2021.102196 or https://arxiv.org/abs/2102.02711)
+Official code of the paper "Fine-tuning deep learning model parameters for improved super-resolution of dynamic MRI with prior-knowledge" (https://doi.org/10.1016/j.artmed.2021.102196 and https://arxiv.org/abs/2102.02711)
 
 The pre-print of this work is available on ArXiv: https://arxiv.org/abs/2102.02711
 
@@ -33,4 +33,8 @@ doi = {https://doi.org/10.1016/j.artmed.2021.102196},
 author = {Sarasaen, Chompunuch and Chatterjee, Soumick and Breitkopf, Mario and Rose, Georg and N{\"u}rnberger, Andreas and Speck, Oliver},
 }
 ```
+
+The complete manuscript is also on ArXiv:-
+> [Chompunuch Sarasaen, Soumick Chatterjee, Mario Breitkopf, Georg Rose, Andreas Nürnberger, Oliver Speck: Fine-tuning deep learning model parameters for improved super-resolution of dynamic MRI with prior-knowledge (arXiv:2102.02711, Feb 2021)](https://arxiv.org/abs/2102.02711)
+
 Thank you so much for your support.
