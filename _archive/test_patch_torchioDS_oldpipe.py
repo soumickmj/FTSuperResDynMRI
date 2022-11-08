@@ -56,8 +56,8 @@ lossIDs = {
 
 def parseARGS():
     ap = argparse.ArgumentParser()
-    ap.add_argument("-g", "--gpu", default="1", help="GPU ID(s).") 
-    ap.add_argument("--seed", default=2020, type=int, help="Seed") 
+    ap.add_argument("-g", "--gpu", default="1", help="GPU ID(s).")
+    ap.add_argument("--seed", default=2020, type=int, help="Seed")
     ap.add_argument("-ds", "--dataset", default=r'/project/schatter/Chimp/Data/3DDynTest/ChimpAbdomen/DynProtocol0/', help="Path to Dataset Folder.")
     ap.add_argument("-op", "--outpath", default=r'/project/schatter/Chimp/Data/', help="Path for Output.")
     ap.add_argument("-ot", "--outtype", default=r'Chimp3DDyn0_woZpadTriNorm', help="Type of Recon currently being performed.")
@@ -85,19 +85,29 @@ def parseARGS():
 
     ap.add_argument("-nc", "--nchannel", type=int, default=1, help="Number of Channels in the Data.")
     ap.add_argument("-is", "--inshape", default='(256,256,30)', help="Input Shape. Supply seperated by coma or as a tuple, no spaces in between.  Will only be used if Patch Size is None.")
-    ap.add_argument("-int", "--preint", default=None, help="Pre-interpolate before sending it to the Network. Set it to None if not needed.")    
+    ap.add_argument("-int", "--preint", default=None, help="Pre-interpolate before sending it to the Network. Set it to None if not needed.")
     ap.add_argument("-nrm", "--prenorm", type=int, default=1, help="Pre-norm before saving the images and calculating the metrics.")    
 
     ap.add_argument("-dus", "--detectus", type=int, default=0, help="Whether to replace the us using model name")
 
     #param to reproduce model
-    ap.add_argument("-mid", "--modelid", type=int, default=0, help="Model ID."+str(modelIDs))
+    ap.add_argument(
+        "-mid",
+        "--modelid",
+        type=int,
+        default=0,
+        help=f"Model ID.{str(modelIDs)}",
+    )
+
     ap.add_argument("-mbn", "--batchnorm", type=bool, default=False, help="(Only for Model ID 0) Do BatchNorm.")
     ap.add_argument("-mum", "--upmode", default='upconv', help="(Only for Model ID 0) UpMode [upconv, upsample].")
     ap.add_argument("-mdp", "--mdepth", type=int, default=3, help="(Only for Model ID 0 and 6) Depth of the Model.")
     ap.add_argument("-d", "--dropprob", type=float, default=0.0, help="(Only for Model ID 0 and 6) Dropout Probability.")
     ap.add_argument("-f", "--nfeatures", type=int, default=64, help="(Not for DenseNet) N Starting Features of the Network.")
-    ap.add_argument("-lid", "--lossid", type=int, default=0, help="Loss ID."+str(lossIDs))
+    ap.add_argument(
+        "-lid", "--lossid", type=int, default=0, help=f"Loss ID.{str(lossIDs)}"
+    )
+
     ap.add_argument("-plt", "--plosstyp", default="L1", help="(Only for Loss ID 0) Perceptual Loss Type.")
     ap.add_argument("-pll", "--plosslvl", type=int, default=3, help="(Only for Loss ID 0) Perceptual Loss Level.")
     ap.add_argument("-lrd", "--lrdecrate", type=int, default=1, help="(To be used for Fine-Tuning) Factor by which lr will be divided to find the actual lr. Set it to 1 if not desired")
@@ -105,7 +115,7 @@ def parseARGS():
     ap.add_argument("-ftep", "--fteprt", type=float, default=0.00, help="(To be used for Fine-Tuning) Fine-Tune Epoch Rate.")
     ap.add_argument("-ftit", "--ftitrt", type=float, default=0.10, help="(To be used for Fine-Tuning, if fteprt is None) Fine-Tune Iteration Rate.")
 
-    ap.add_argument("-tls", "--tnnlslc", type=int, default=2, help="Solo per ThisNewNet. loss_slice_count. Default 2")    
+    ap.add_argument("-tls", "--tnnlslc", type=int, default=2, help="Solo per ThisNewNet. loss_slice_count. Default 2")
     ap.add_argument("-tli", "--tnnlinp", type=int, default=1, help="Solo per ThisNewNet. loss_inplane. Default 1")
 
     return ap.parse_args()
