@@ -88,7 +88,7 @@ if not args.non_deter:
     torch.cuda.manual_seed(args.seed)
     torch.backends.cudnn.deterministic = True
 
-if __name__ == "__main__" :
+if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() and args.cuda else "cpu")
     tb_writer = SummaryWriter(log_dir = os.path.join(args.log_path,args.trainID))
     os.makedirs(args.save_path, exist_ok=True)
@@ -102,7 +102,7 @@ if __name__ == "__main__" :
 
     motion_params = {k.split('motion_')[1]: v for k, v in vars(args).items() if k.startswith('motion')}
     testDS = createTIODS(args.gt_vols_test, args.corrupt_vols_test, is_infer=True, p=args.corrupt_prob, **motion_params)
-    
+
     test_loader = DataLoader(dataset=testDS,batch_size=args.batch_size,shuffle=False, num_workers=args.num_workers)
 
     if args.modelID == 0:
@@ -120,7 +120,7 @@ if __name__ == "__main__" :
 
     chk = torch.load(args.checkpoint, map_location=device)
     model.load_state_dict(chk['state_dict'])
-    trained_epoch = chk['epoch'] 
+    trained_epoch = chk['epoch']
     model.eval()
 
     saver = ResSaver(os.path.join(args.save_path, "Results"), save_inp=args.save_inp, do_norm=args.do_norm)
@@ -129,7 +129,7 @@ if __name__ == "__main__" :
         runningSSIM = []
         test_ssim = []
         test_metrics = []
-        print('Epoch '+ str(trained_epoch)+ ': Test')
+        print(f'Epoch {str(trained_epoch)}: Test')
         for i, batch in enumerate(tqdm(test_loader)):
             inp, gt, gt_flag = process_valBatch(batch)
 
@@ -155,8 +155,8 @@ if __name__ == "__main__" :
                         niter = len(test_loader)+i
                         tb_writer.add_scalar('Test/SSIM', median(runningSSIM), niter)
                         runningSSIM = []
-    
-    if len(test_metrics) > 0:
-        print("Avg SSIM: "+str(median(test_ssim)))
+
+    if test_metrics:
+        print(f"Avg SSIM: {str(median(test_ssim))}")
         df = pd.DataFrame.from_dict(test_metrics)
         df.to_csv(os.path.join(args.save_path, 'Results.csv'), index=False)
