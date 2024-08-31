@@ -12,6 +12,25 @@ This repository is dedicated to the Fine-Tuning project (paper link below), is n
 
 The final DDoS model and further developments of the DDoS project are on the new GitHub repo: https://github.com/soumickmj/DDoS
 
+## Model Weights
+The weights of the main training for the highest undersampling evaluated here (i.e. 6.25% of the centre of the k-space), trained on the CHAOS dataset, has been made publicly available on Huggingface: [https://huggingface.co/soumickmj/FTSRDyn_UNet3D_CHAOS_MT_Centre6p25MaskWoPad](https://huggingface.co/soumickmj/FTSRDyn_UNet3D_CHAOS_MT_Centre6p25MaskWoPad). The fine-tuned models (after main training) are not shared as they are subject specific. 
+
+Since these models have been uploaded to Hugging Face following their format, but the pipeline here is incompatible with Hugging Face directly, they cannot be used as-is. Instead, the weights must be downloaded using the AutoModel class from the transformers package, saved as a checkpoint, and then the path to this saved checkpoint must be specified using "--chkpoint" (to perform further training as the an extension of the main training stage) or "--chkpointft" (to perform fine-tuning) parameter.
+
+```python
+from transformers import AutoModel
+modelHF = AutoModel.from_pretrained("soumickmj/FTSRDyn_UNet3D_CHAOS_MT_Centre6p25MaskWoPad", trust_remote_code=True)
+torch.save({'state_dict': modelHF.model.state_dict()}, "/path/to/checkpoint/model.pth")
+```
+To run this pipeline with these weights, the path to the checkpoint must then be passed as chkpoint or chkpointft, as an additional parameter along with the other desired parameters:
+```bash
+--chkpoint /path/to/checkpoint/model.pth
+```
+or
+```bash
+--chkpointft /path/to/checkpoint/model.pth
+```
+
 ## Credits
 
 If you like this repository, please click on Star!
