@@ -63,8 +63,8 @@ GT = "/mnt/public/sarasaen/Data/3DDynTest/ChimpAbdomen/DynProtocol0/hrTest"
 out = "/mnt/public/sarasaen/Data/CHAOSDynWoT2/dynDualChn/usTrain_UNETDSv1do0.0dp3upconv_Center6p25MaskWoPad_pLossL1lvl3_infstr3c3c3/NewEnsamble_Chimp3DDyn0_woZpad"
 ignore_1stStatic = True
 
-dynMTs = sorted(glob(dynMT+"/*/"))
-staticFTs = sorted(glob(staticFT+"/*/"))
+dynMTs = sorted(glob(f"{dynMT}/*/"))
+staticFTs = sorted(glob(f"{staticFT}/*/"))
 
 if ignore_1stStatic:
     staticFTs = staticFTs[1:]
